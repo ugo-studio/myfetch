@@ -1,10 +1,12 @@
 {
-  "name": "myfetch",
+  "name": "myfetchapi",
   "version": "1.0.0",
   "description": "mFetch is a JavaScript library that provides a utility function for making HTTP requests with queuing and retry functionality.",
   "main": "index.js",
+  "types": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "esbuild index.ts --format=esm --bundle --outfile=index.js"
   },
   "repository": {
     "type": "git",

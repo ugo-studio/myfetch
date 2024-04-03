@@ -4,7 +4,7 @@ interface ConnectionResult {
   msg?: any;
 }
 
-let MAX_CONCURRENT_REQUESTS = 5;
+let MAX_CONCURRENT_REQUESTS = 500;
 let currentRequests = 0;
 const queue: (() => void)[] = [];
 
