@@ -1,0 +1,29 @@
+{
+  "name": "myfetch",
+  "version": "1.0.0",
+  "description": "mFetch is a JavaScript library that provides a utility function for making HTTP requests with queuing and retry functionality.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ugo-studio/myfetch.git"
+  },
+  "keywords": [
+    "fetch",
+    "http",
+    "request",
+    "retry",
+    "queuing",
+    "async",
+    "promise",
+    "network"
+  ],
+  "author": "ugo-studio",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ugo-studio/myfetch/issues"
+  },
+  "homepage": "https://github.com/ugo-studio/myfetch#readme"
+}
