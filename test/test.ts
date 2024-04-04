@@ -1,6 +1,10 @@
-import { myFetch } from "myfetch";
+import { SET_MAX_CONCURRENT_REQUESTS, myFetch } from "../src/index";
+// import { SET_MAX_CONCURRENT_REQUESTS, myFetch } from "myfetchapi";
+
+SET_MAX_CONCURRENT_REQUESTS(3);
 
 for (let i = 0; i < 8; i++) {
+  console.log("started", i);
   myFetch(
     `http://ffapi.pages.dev/favicon.png`,
     {},
@@ -14,7 +18,9 @@ for (let i = 0; i < 8; i++) {
       // },
     }
   )
-    .then((r) => r.text())
-    .then((r) => console.log(r.substring(0, 10)))
+    .then((r) => {
+      return r.text();
+    })
+    .then((r) => console.log(i, r.substring(0, 10)))
     .catch((e) => console.log(e));
 }

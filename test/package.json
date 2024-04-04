@@ -8,5 +8,8 @@
     "dev": "tsx test.ts"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^20.12.4"
+  }
 }

@@ -8,8 +8,9 @@ let MAX_CONCURRENT_REQUESTS = 500;
 let currentRequests = 0;
 const queue: (() => void)[] = [];
 
-export const SET_MAX_CONCURRENT_REQUESTS = (max: number) =>
-  (MAX_CONCURRENT_REQUESTS = max);
+export const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
+  MAX_CONCURRENT_REQUESTS = max;
+};
 
 async function fetchWithConnection(
   input: RequestInfo,
@@ -31,18 +32,15 @@ async function fetchWithConnection(
 export type myFetchOptions = {
   maxRetry?: number;
   retryCb?: (err: any, count: number, max: number) => any;
-  retryCondition?: (
-    res: Response | globalThis.Response
-  ) => boolean | Promise<boolean>;
+  retryCondition?: (res: Response) => boolean | Promise<boolean>;
 };
 
 export async function myFetch(
   input: RequestInfo,
   init: RequestInit = {},
   options?: myFetchOptions
-): Promise<Response> {
+) {
   const maxRetry = options?.maxRetry || 3;
-
   return new Promise<Response>((resolve, reject) => {
     const executeRequest = async (retryCount: number) => {
       currentRequests++;
