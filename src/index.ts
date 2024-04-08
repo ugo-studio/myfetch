@@ -57,9 +57,9 @@ export async function myFetch(
           const error = msg || new Error("Unknown error");
           if (retryCount < maxRetry) {
             retrying = true;
-            executeRequest(retryCount + 1);
             if (options?.retryCb)
-              options?.retryCb(error, retryCount + 1, maxRetry);
+              await options?.retryCb(error, retryCount + 1, maxRetry);
+            executeRequest(retryCount + 1);
           } else {
             reject(error);
           }
