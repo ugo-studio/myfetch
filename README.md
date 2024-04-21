@@ -19,7 +19,11 @@ const { myFetch, SET_MAX_CONCURRENT_REQUESTS } = require("myfetchapi");
 SET_MAX_CONCURRENT_REQUESTS(100);
 
 // Make a request
-myFetch("https://example.com/api/data", { method: "GET" }, { maxRetry: 3 })
+myFetch(
+  "https://example.com/api/data",
+  { method: "GET" },
+  { maxRetry: 5 /* default is 3. To disable retries, set it to `null` or `0` */ }
+)
   .then((response) => console.log(response))
   .catch((error) => console.error(error));
 ```

@@ -40,7 +40,12 @@ export async function myFetch(
   init: RequestInit = {},
   options?: myFetchOptions
 ) {
-  const maxRetry = options?.maxRetry || 3;
+  const maxRetry =
+    options?.maxRetry === undefined
+      ? 3
+      : options.maxRetry === null
+      ? 0
+      : options.maxRetry;
   return new Promise<Response>((resolve, reject) => {
     const executeRequest = async (retryCount: number) => {
       currentRequests++;
