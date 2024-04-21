@@ -23,9 +23,22 @@ async function fetchWithConnection(
       ? await options.retryCondition(res)
       : res.ok;
     if (isOkay) return { success: true, res: res as any };
-    return { success: false, msg: new Error(res.statusText) };
+    return {
+      success: false,
+      msg: new Error(
+        `statusCode: ${res.status}, response: "${await getText(res)}"`
+      ),
+    };
   } catch (err) {
     return { success: false, msg: err };
+  }
+}
+
+async function getText(res: Response) {
+  try {
+    return (await res.text()).substring(0, 250);
+  } catch (_) {
+    return "";
   }
 }
 
@@ -44,6 +57,8 @@ export async function myFetch(
     options?.maxRetry === undefined
       ? 3
       : options.maxRetry === null
+      ? 0
+      : options.maxRetry < 0
       ? 0
       : options.maxRetry;
   return new Promise<Response>((resolve, reject) => {

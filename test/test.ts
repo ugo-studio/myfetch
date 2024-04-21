@@ -3,12 +3,13 @@ import { SET_MAX_CONCURRENT_REQUESTS, myFetch } from "../src/index";
 
 SET_MAX_CONCURRENT_REQUESTS(3);
 
-for (let i = 0; i < 8; i++) {
+for (let i = 0; i < 3; i++) {
   console.log("started", i);
   myFetch(
     `http://ffapi.pages.dev/favicon.png`,
     {},
     {
+      maxRetry: null,
       retryCb(err, count, max) {
         console.log(`>>>> retrying ${count}/${max}, ${err}`);
       },
