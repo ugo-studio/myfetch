@@ -30,7 +30,7 @@ async function fetchWithConnection(
 }
 
 export type myFetchOptions = {
-  maxRetry?: number;
+  maxRetry?: number | null;
   retryCb?: (err: any, count: number, max: number) => any;
   retryCondition?: (res: Response) => boolean | Promise<boolean>;
 };
