@@ -1,15 +1,21 @@
 import { SET_MAX_CONCURRENT_REQUESTS, myFetch } from "../src/index";
 // import { SET_MAX_CONCURRENT_REQUESTS, myFetch } from "myfetchapi";
 
-SET_MAX_CONCURRENT_REQUESTS(3);
+SET_MAX_CONCURRENT_REQUESTS(5);
 
 for (let i = 0; i < 3; i++) {
   console.log("started", i);
   myFetch(
     `http://ffapi.pages.dev/favicon.png`,
-    {},
     {
-      maxRetry: null,
+      // agent(parsedUrl) {
+      //   console.log(parsedUrl);
+      //   return true;
+      // },
+    },
+    {
+      useNodeFetch: false,
+      maxRetry: undefined,
       retryCb(err, count, max) {
         console.log(`>>>> retrying ${count}/${max}, ${err}`);
       },

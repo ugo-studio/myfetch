@@ -1,6 +1,6 @@
 {
   "name": "myfetchapi",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "mFetch is a JavaScript library that provides a utility function for making HTTP requests with queuing and retry functionality.",
   "type": "commonjs",
   "main": "./dist/index.js",
@@ -17,8 +17,10 @@
   },
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && esbuild src/index.ts --format=cjs --bundle --outfile=dist/index.js && esbuild src/index.ts --format=esm --bundle --outfile=dist/index.mjs"
+    "test": "cd test && npm run dev",
+    "build": "tsc && cd src && npm run cjs && npm run esm",
+    "cjs": "esbuild nodeFetch.ts --format=cjs --bundle --platform=node --outfile=../dist/nodeFetch.js && esbuild index.ts --format=cjs --bundle --external:./nodeFetch.js --outfile=../dist/index.js",
+    "esm": "esbuild nodeFetch.ts --format=esm --bundle --platform=node --outfile=../dist/nodeFetch.mjs && esbuild index.ts --format=esm --bundle --external:./nodeFetch.js --outfile=../dist/index.mjs"
   },
   "repository": {
     "type": "git",
@@ -39,5 +41,11 @@
   "bugs": {
     "url": "https://github.com/ugo-studio/myfetch/issues"
   },
-  "homepage": "https://github.com/ugo-studio/myfetch#readme"
+  "homepage": "https://github.com/ugo-studio/myfetch#readme",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9"
+  }
 }

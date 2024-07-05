@@ -1,3 +1,5 @@
+import type * as nodefetch from "node-fetch";
+
 interface ConnectionResult {
   success: boolean;
   res?: Response;
@@ -8,17 +10,24 @@ let MAX_CONCURRENT_REQUESTS = 500;
 let currentRequests = 0;
 const queue: (() => void)[] = [];
 
+/**
+ * set maximum number of concurrent requests (requests made at thesame time)
+ * @param max @default 500
+ */
 export const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
-  MAX_CONCURRENT_REQUESTS = max;
+  MAX_CONCURRENT_REQUESTS = Math.max(1, max);
 };
 
 async function fetchWithConnection(
-  input: RequestInfo,
-  init: RequestInit,
+  input: RequestInfo | nodefetch.RequestInfo,
+  init?: RequestInit | nodefetch.RequestInit,
   options?: myFetchOptions
 ): Promise<ConnectionResult> {
   try {
-    const res = await fetch(input as any, init as any);
+    const httpFunc = options?.useNodeFetch
+      ? (await require("./nodeFetch.js")).fetch
+      : fetch;
+    const res = await httpFunc(input as any, init as any);
     const isOkay = options?.retryCondition
       ? await options.retryCondition(res)
       : res.ok;
@@ -34,23 +43,26 @@ async function fetchWithConnection(
   }
 }
 
-async function getText(res: Response) {
+async function getText(res: Response | nodefetch.Response) {
   try {
-    return (await res.text()).substring(0, 250);
+    return await res.text();
   } catch (_) {
     return "";
   }
 }
 
 export type myFetchOptions = {
+  useNodeFetch?: boolean;
   maxRetry?: number | null;
   retryCb?: (err: any, count: number, max: number) => any;
-  retryCondition?: (res: Response) => boolean | Promise<boolean>;
+  retryCondition?: (
+    res: Response | nodefetch.Response
+  ) => boolean | Promise<boolean>;
 };
 
 export async function myFetch(
-  input: RequestInfo,
-  init: RequestInit = {},
+  input: RequestInfo | nodefetch.RequestInfo,
+  init?: RequestInit | nodefetch.RequestInit,
   options?: myFetchOptions
 ) {
   const maxRetry =
