@@ -8,6 +8,8 @@ You can install this package via npm:
 
 ```bash
 npm install myfetchapi
+yarn add myfetchapi
+bun add myfetchapi
 ```
 
 ## Usage
@@ -22,7 +24,9 @@ SET_MAX_CONCURRENT_REQUESTS(100);
 myFetch(
   "https://example.com/api/data",
   { method: "GET" },
-  { maxRetry: 5 /* default is 3. To disable retries, set it to `null` or `0` */ }
+  {
+    maxRetry: 5 /* default is 3. To disable retries, set it to `null` or `0` */,
+  }
 )
   .then((response) => console.log(response))
   .catch((error) => console.error(error));
@@ -38,6 +42,17 @@ The main function to make HTTP requests.
   - `input`: RequestInfo - The URL or Request object.
   - `init` (optional): RequestInit - The request [Options](https://www.npmjs.com/package/node-fetch#fetch-options) for the HTTP(S) request
   - `options` (optional): myFetchOptions - Additional options.
+      - `useNodeFetch` (optional): boolean - Set to true to use Node.js [Options](https://www.npmjs.com/package/node-fetch#fetch-options), e.g., agents.
+      - `maxRetry` (optional): number | null - How many times a request will retry if it failed. Default is 3.
+      - `retryCb` (optional): function - Callback function that is called when the HTTP(S) request is retrying.
+        - Parameters:
+          - `err`: Error object.
+          - `count`: Retry count.
+          - `max`: Max retry count.
+      - `retryCondition` (optional): function - Function to override and set your own condition for retrying.
+        - Parameters:
+          - `res`: HTTP(S) Response object.
+        - Returns: boolean | Promise<boolean>
 - Returns: Promise<Response>
 
 ### SET_MAX_CONCURRENT_REQUESTS
