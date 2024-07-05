@@ -36,7 +36,7 @@ The main function to make HTTP requests.
 
 - Parameters:
   - `input`: RequestInfo - The URL or Request object.
-  - `init` (optional): RequestInit - The request options.
+  - `init` (optional): RequestInit - The request [Options](https://www.npmjs.com/package/node-fetch#fetch-options) for the HTTP(S) request
   - `options` (optional): myFetchOptions - Additional options.
 - Returns: Promise<Response>
 
@@ -49,4 +49,4 @@ Function to set the maximum number of concurrent requests.
 
 ## License
 
-This project is licensed under the ISC License
+This project is licensed under the MIT License

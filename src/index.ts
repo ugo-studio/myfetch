@@ -52,9 +52,28 @@ async function getText(res: Response | nodefetch.Response) {
 }
 
 export type myFetchOptions = {
+  /**
+   * set this to `true` in order to use nodejs features, e.g agents
+   */
   useNodeFetch?: boolean;
+  /**
+   * How many times a request will retry if it failed
+   */
   maxRetry?: number | null;
+  /**
+   * callback is called when the http(s) request is retrying
+   * @param err Error object
+   * @param count retry count
+   * @param max maxRetry
+   * @returns any
+   */
   retryCb?: (err: any, count: number, max: number) => any;
+  /**
+   * Normally the request is retried if the http(s) status isn't ok.
+   * Use this function to override and set your own condition.
+   * @param res http(s) Response object
+   * @returns boolean
+   */
   retryCondition?: (
     res: Response | nodefetch.Response
   ) => boolean | Promise<boolean>;
