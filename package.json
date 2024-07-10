@@ -1,6 +1,6 @@
 {
   "name": "myfetchapi",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "mFetch is a JavaScript library that provides a utility function for making HTTP requests with queuing and retry functionality.",
   "type": "commonjs",
   "main": "./dist/index.js",
@@ -18,9 +18,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "cd test && npm run dev",
-    "build": "tsc && cd src && npm run cjs && npm run esm",
-    "cjs": "esbuild nodeFetch.ts --format=cjs --bundle --platform=node --outfile=../dist/nodeFetch.js && esbuild index.ts --format=cjs --bundle --external:./nodeFetch.js --outfile=../dist/index.js",
-    "esm": "esbuild nodeFetch.ts --format=esm --bundle --platform=node --outfile=../dist/nodeFetch.mjs && esbuild index.ts --format=esm --bundle --external:./nodeFetch.js --outfile=../dist/index.mjs"
+    "build": "tsc && npm run cjs && npm run esm",
+    "cjs": "cd src && esbuild ./nodeFetch.ts --format=cjs --bundle --platform=node --outfile=../dist/nodeFetch.js && esbuild ./index.ts --format=cjs --bundle --external:./nodeFetch --outfile=../dist/index.js",
+    "esm": "cd src && esbuild ./nodeFetch.ts --format=esm --bundle --platform=node --outfile=../dist/nodeFetch.mjs && esbuild ./index.ts --format=esm --bundle --external:./nodeFetch --outfile=../dist/index.mjs"
   },
   "repository": {
     "type": "git",

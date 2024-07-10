@@ -1,4 +1,5 @@
 import type * as nodefetch from "node-fetch";
+import * as nfetch from "./nodeFetch";
 
 interface ConnectionResult {
   success: boolean;
@@ -24,9 +25,7 @@ async function fetchWithConnection(
   options?: myFetchOptions
 ): Promise<ConnectionResult> {
   try {
-    const httpFunc = options?.useNodeFetch
-      ? (await require("./nodeFetch.js")).fetch
-      : fetch;
+    const httpFunc = options?.useNodeFetch ? nfetch.fetch : fetch;
     const res = await httpFunc(input as any, init as any);
     const isOkay = options?.retryCondition
       ? await options.retryCondition(res)
