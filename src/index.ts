@@ -52,11 +52,18 @@ async function fetchWithConnection(
   msg?: any;
 }> {
   try {
+    // check if contains aborted signal
+    const aborted = init?.signal?.aborted;
+    if (aborted)
+      return { success: false, msg: new Error("The operation was aborted.") };
+    // make request
     const httpFunc = options?.useNodeFetch ? nfetch.fetch : fetch;
     const res = await httpFunc(input as any, init as any);
+    // check response
     const isOkay = options?.retryCondition
       ? await options.retryCondition(res)
       : res.ok;
+    // return result
     if (isOkay) return { success: true, res: res };
     return {
       success: false,
