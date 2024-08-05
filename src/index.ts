@@ -1,56 +1,10 @@
 import type * as nodefetch from "node-fetch";
 import * as nfetch from "./nodeFetch";
 
-interface ConnectionResult {
-  success: boolean;
-  res?: Response;
-  msg?: any;
-}
+export type MyFetchRequestInfo = RequestInfo | nodefetch.RequestInfo;
+export type MyFetchRequestInit = RequestInit | nodefetch.RequestInit;
 
-let MAX_CONCURRENT_REQUESTS = 500;
-let currentRequests = 0;
-const queue: (() => void)[] = [];
-
-/**
- * set maximum number of concurrent requests (requests made at thesame time)
- * @param max @default 500
- */
-export const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
-  MAX_CONCURRENT_REQUESTS = Math.max(1, max);
-};
-
-async function fetchWithConnection(
-  input: RequestInfo | nodefetch.RequestInfo,
-  init?: RequestInit | nodefetch.RequestInit,
-  options?: myFetchOptions
-): Promise<ConnectionResult> {
-  try {
-    const httpFunc = options?.useNodeFetch ? nfetch.fetch : fetch;
-    const res = await httpFunc(input as any, init as any);
-    const isOkay = options?.retryCondition
-      ? await options.retryCondition(res)
-      : res.ok;
-    if (isOkay) return { success: true, res: res as any };
-    return {
-      success: false,
-      msg: new Error(
-        `statusCode: ${res.status}, response: "${await getText(res)}"`
-      ),
-    };
-  } catch (err) {
-    return { success: false, msg: err };
-  }
-}
-
-async function getText(res: Response | nodefetch.Response) {
-  try {
-    return await res.text();
-  } catch (_) {
-    return "";
-  }
-}
-
-export type myFetchOptions = {
+export type MyFetchOptions = {
   /**
    * set this to `true` in order to use nodejs features, e.g agents
    */
@@ -78,10 +32,57 @@ export type myFetchOptions = {
   ) => boolean | Promise<boolean>;
 };
 
+let MAX_CONCURRENT_REQUESTS = 500;
+let currentRequests = 0;
+const queue: (() => void)[] = [];
+
+/**
+ * set maximum number of concurrent requests (requests made at thesame time)
+ * @param max @default 500
+ */
+export const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
+  MAX_CONCURRENT_REQUESTS = Math.max(1, max);
+};
+
+async function fetchWithConnection(
+  input: MyFetchRequestInfo,
+  init?: MyFetchRequestInit,
+  options?: MyFetchOptions
+): Promise<{
+  success: boolean;
+  res?: Response;
+  msg?: any;
+}> {
+  try {
+    const httpFunc = options?.useNodeFetch ? nfetch.fetch : fetch;
+    const res = await httpFunc(input as any, init as any);
+    const isOkay = options?.retryCondition
+      ? await options.retryCondition(res)
+      : res.ok;
+    if (isOkay) return { success: true, res: res as any };
+    return {
+      success: false,
+      msg: new Error(
+        `statusCode: ${res.status}, response: "${await getText(res)}"`
+      ),
+    };
+  } catch (err) {
+    return { success: false, msg: err };
+  }
+}
+
+async function getText(res: Response | nodefetch.Response) {
+  try {
+    return await res.text();
+  } catch (_) {
+    return "";
+  }
+}
+
 export async function myFetch(
-  input: RequestInfo | nodefetch.RequestInfo,
-  init?: RequestInit | nodefetch.RequestInit,
-  options?: myFetchOptions
+  input: MyFetchRequestInfo,
+  init?: MyFetchRequestInit,
+  options?: MyFetchOptions
 ) {
   const maxRetry =
     options?.maxRetry === undefined
