@@ -1,9 +1,9 @@
 import type * as nodefetch from "node-fetch";
 import * as nfetch from "./nodeFetch";
 
+export type MyFetchResponse = Response | nodefetch.Response;
 export type MyFetchRequestInfo = RequestInfo | nodefetch.RequestInfo;
 export type MyFetchRequestInit = RequestInit | nodefetch.RequestInit;
-
 export type MyFetchOptions = {
   /**
    * set this to `true` in order to use nodejs features, e.g agents
@@ -27,9 +27,7 @@ export type MyFetchOptions = {
    * @param res http(s) Response object
    * @returns boolean
    */
-  retryCondition?: (
-    res: Response | nodefetch.Response
-  ) => boolean | Promise<boolean>;
+  retryCondition?: (res: MyFetchResponse) => boolean | Promise<boolean>;
 };
 
 let MAX_CONCURRENT_REQUESTS = 500;
@@ -50,7 +48,7 @@ async function fetchWithConnection(
   options?: MyFetchOptions
 ): Promise<{
   success: boolean;
-  res?: Response;
+  res?: MyFetchResponse;
   msg?: any;
 }> {
   try {
@@ -59,7 +57,7 @@ async function fetchWithConnection(
     const isOkay = options?.retryCondition
       ? await options.retryCondition(res)
       : res.ok;
-    if (isOkay) return { success: true, res: res as any };
+    if (isOkay) return { success: true, res: res };
     return {
       success: false,
       msg: new Error(
@@ -71,7 +69,7 @@ async function fetchWithConnection(
   }
 }
 
-async function getText(res: Response | nodefetch.Response) {
+async function getText(res: MyFetchResponse) {
   try {
     return await res.text();
   } catch (_) {
@@ -92,7 +90,7 @@ export async function myFetch(
       : options.maxRetry < 0
       ? 0
       : options.maxRetry;
-  return new Promise<Response>((resolve, reject) => {
+  return new Promise<MyFetchResponse>((resolve, reject) => {
     const executeRequest = async (retryCount: number) => {
       currentRequests++;
       let retrying = false;
