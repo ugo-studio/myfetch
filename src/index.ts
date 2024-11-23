@@ -1,5 +1,6 @@
 import type * as nodefetch from "node-fetch";
 import * as nfetch from "./nodeFetch";
+import { error } from "console";
 
 export type MyFetchResponse = Response | nodefetch.Response;
 export type MyFetchRequestInfo = RequestInfo | nodefetch.RequestInfo;
@@ -48,40 +49,32 @@ async function fetchWithConnection(
   options?: MyFetchOptions
 ): Promise<{
   success: boolean;
-  res?: MyFetchResponse;
-  msg?: any;
+  response?: MyFetchResponse;
+  error?: any;
 }> {
   try {
     // check if contains aborted signal
     const aborted = init?.signal?.aborted;
     if (aborted)
-      return { success: false, msg: new Error("The operation was aborted.") };
+      return { success: false, error: new Error("The operation was aborted.") };
     // make request
     const httpFunc = options?.useNodeFetch ? nfetch.fetch : fetch;
-    const res = await httpFunc(input as any, init as any);
+    const response = await httpFunc(input as any, init as any);
     // check response
     const isOkay = options?.retryCondition
-      ? await options.retryCondition(res)
-      : res.ok;
+      ? await options.retryCondition(response)
+      : response.ok;
     // return result
-    if (isOkay) return { success: true, res: res };
+    if (isOkay) return { success: true, response };
 
-    const error = new Error(`statusCode: ${res.status}`);
-    (error as any).text = () => getText(res);
+    const error = new Error(`statusCode: ${response.status}`);
+    (error as any).response = response;
     return {
       success: false,
-      msg: error,
+      error,
     };
-  } catch (err) {
-    return { success: false, msg: err };
-  }
-}
-
-async function getText(res: MyFetchResponse) {
-  try {
-    return await res.text();
-  } catch (_) {
-    return "";
+  } catch (error: any) {
+    return { success: false, error };
   }
 }
 
@@ -103,22 +96,25 @@ export async function myFetch(
       currentRequests++;
       let retrying = false;
       try {
-        const { success, res, msg } = await fetchWithConnection(
+        const { success, response, error } = await fetchWithConnection(
           input,
           init,
           options
         );
-        if (success && res) {
-          resolve(res);
+        if (success && response) {
+          resolve(response);
         } else {
-          const error = msg || new Error("Unknown error");
+          const err = error || new Error("Unknown error");
+
           if (retryCount < maxRetry) {
             retrying = true;
+
             if (options?.retryCb)
-              await options?.retryCb(error, retryCount + 1, maxRetry);
+              await options?.retryCb(err, retryCount + 1, maxRetry);
+
             executeRequest(retryCount + 1);
           } else {
-            reject(error);
+            reject(err);
           }
         }
       } finally {
