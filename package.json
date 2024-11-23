@@ -1,6 +1,6 @@
 {
   "name": "myfetchapi",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "mFetch is a JavaScript library that provides a utility function for making HTTP requests with queuing and retry functionality.",
   "type": "commonjs",
   "main": "./dist/index.js",
