@@ -1,9 +1,9 @@
 import type * as nodefetch from "node-fetch";
 import * as nfetch from "./nodeFetch";
 
-export type MyFetchResponse = Response | nodefetch.Response;
-export type MyFetchRequestInfo = RequestInfo | nodefetch.RequestInfo;
-export type MyFetchRequestInit = (RequestInit | nodefetch.RequestInit) & {
+export type MyFetchResponse = Response & nodefetch.Response;
+export type MyFetchRequestInfo = RequestInfo & nodefetch.RequestInfo;
+export type MyFetchRequestInit = (RequestInit & nodefetch.RequestInit) & {
   /**
    * request timeout in milliseconds
    */
@@ -81,7 +81,7 @@ async function fetchWithConnection(
 
     const retryCondition = init?.retryCondition;
     if (retryCondition && typeof retryCondition === "function") {
-      const isOK = await retryCondition(response);
+      const isOK = await retryCondition(response as MyFetchResponse);
       if (!isOK) {
         const error = new Error(
           `failed 'isOkay' condition. statusCode: ${response.status}`
@@ -92,7 +92,7 @@ async function fetchWithConnection(
     }
 
     // return response
-    return { success: true, response };
+    return { success: true, response: response as MyFetchResponse };
   } catch (error: any) {
     if (timeoutId) clearTimeout(timeoutId);
 
