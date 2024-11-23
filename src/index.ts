@@ -66,9 +66,7 @@ async function fetchWithConnection(
     // return result
     if (isOkay) return { success: true, res: res };
 
-    const error = new Error(
-        `statusCode: ${res.status}`
-      );
+    const error = new Error(`statusCode: ${res.status}`);
     (error as any).text = () => getText(res);
     return {
       success: false,
