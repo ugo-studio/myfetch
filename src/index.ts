@@ -65,11 +65,14 @@ async function fetchWithConnection(
       : res.ok;
     // return result
     if (isOkay) return { success: true, res: res };
+
+    const error = new Error(
+        `statusCode: ${res.status}`
+      );
+    (error as any).text = () => getText(res);
     return {
       success: false,
-      msg: new Error(
-        `statusCode: ${res.status}, response: "${await getText(res)}"`
-      ),
+      msg: error,
     };
   } catch (err) {
     return { success: false, msg: err };
