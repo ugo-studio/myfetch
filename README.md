@@ -44,8 +44,8 @@ The main function to make HTTP requests.
   - Additional options to `init`.
     - `timeout` (optional): number - Request timeout in milliseconds.
     - `throwHttpError` (optional): boolean - Set this to `false` if you don't want to throw an error when http status is not ok. Default: `true`.
-    - `useNodeFetch` (optional): boolean - Set to true to use Node.js [Options](https://www.npmjs.com/package/node-fetch#fetch-options), e.g., agents.
-    - `maxRetries` (optional): number - How many times a request will retry if it failed. Default is 3.
+    - `useNodeFetch` (optional): boolean - Set to `true` to use Node.js [Options](https://www.npmjs.com/package/node-fetch#fetch-options), e.g agents, and if `false` it uses the environment's default `fetch` implementation. This option is set to `true` by default.
+    - `maxRetries` (optional): number - How many times a request will retry if it failed. Default is 1.
     - `retryCb` (optional): function - Callback function that is called when the HTTP(S) request is retrying.
       - Parameters:
         - `err`: Error object.

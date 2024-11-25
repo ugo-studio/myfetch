@@ -68,7 +68,7 @@ async function fetchWithConnection(
     }
 
     // make request
-    const httpFunc = init?.useNodeFetch ? nfetch.fetch : fetch;
+    const httpFunc = init?.useNodeFetch === false ? fetch : nfetch.fetch;
     const response = await httpFunc(input as any, init as any);
 
     // check response
@@ -106,7 +106,7 @@ export async function myFetch(
 ) {
   const maxRetries =
     init?.maxRetries === undefined
-      ? 3
+      ? 1
       : init.maxRetries === null
       ? 0
       : init.maxRetries < 0
@@ -130,8 +130,9 @@ export async function myFetch(
           if (retryCount < maxRetries) {
             retrying = true;
 
-            if (init?.retryCb)
-              await init?.retryCb(err, retryCount + 1, maxRetries);
+            if (typeof init?.retryCb === "function") {
+              await init.retryCb(err, retryCount + 1, maxRetries);
+            }
 
             executeRequest(retryCount + 1);
           } else {
