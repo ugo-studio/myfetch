@@ -1,8 +1,9 @@
 import type * as nodefetch from "node-fetch";
+
 import * as nfetch from "./nodeFetch";
 
-export type MyFetchResponse = Response & nodefetch.Response;
-export type MyFetchRequestInfo = RequestInfo & nodefetch.RequestInfo;
+export type MyFetchResponse = Response | nodefetch.Response;
+export type MyFetchRequestInfo = string | URL;
 export type MyFetchRequestInit = (RequestInit & nodefetch.RequestInit) & {
   /**
    * request timeout in milliseconds
@@ -13,7 +14,7 @@ export type MyFetchRequestInit = (RequestInit & nodefetch.RequestInit) & {
    */
   throwHttpError?: boolean;
   /**
-   * set this to `true` in order to use nodejs features, e.g agents
+   * This option is choosen automatically according to the environment it is running on. Set this to `true` in order to use nodejs features, e.g agents.
    */
   useNodeFetch?: boolean;
   /**
@@ -35,123 +36,145 @@ export type MyFetchRequestInit = (RequestInit & nodefetch.RequestInit) & {
    * @returns boolean
    */
   retryCondition?: (response: MyFetchResponse) => boolean | Promise<boolean>;
+  /**
+   * Only remove the request from the concurrent request queue after the response body has been fully consumed.
+   * This is useful when you need to ensure that the connection is kept alive until the body is read.
+   * Default: false
+   */
+  waitForBodyUsed?: boolean;
 };
 
-let MAX_CONCURRENT_REQUESTS = 500;
-let currentRequests = 0;
-const queue: (() => void)[] = [];
-
-/**
- * set maximum number of concurrent requests (requests made at thesame time)
- * @param max @default 500
- */
-export const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
-  MAX_CONCURRENT_REQUESTS = Math.max(1, max);
+let MAX_CONCURRENT_REQUESTS = 20;
+const semaphore = {
+  count: 0,
+  queue: [] as (() => void)[],
+  acquire: async () => {
+    if (semaphore.count < MAX_CONCURRENT_REQUESTS) {
+      semaphore.count++;
+      return;
+    }
+    return new Promise<void>((resolve) =>
+      semaphore.queue.push(() => {
+        semaphore.count++;
+        resolve();
+      })
+    );
+  },
+  release: () => {
+    semaphore.count--;
+    if (semaphore.queue.length > 0) {
+      const next = semaphore.queue.shift();
+      if (next) next();
+    }
+  },
 };
 
-async function fetchWithConnection(
+const isNodeEnv =
+  typeof process !== "undefined" &&
+  process.versions != null &&
+  process.versions.node != null;
+
+async function request(
   input: MyFetchRequestInfo,
   init?: MyFetchRequestInit
-): Promise<{
-  success: boolean;
-  response?: MyFetchResponse;
-  error?: any;
-}> {
-  let timeoutId: any;
-
+): Promise<MyFetchResponse> {
+  const controller = new AbortController();
+  const timeoutId = init?.timeout
+    ? setTimeout(() => controller.abort(), init.timeout)
+    : null;
   try {
-    // set timout
-    if (init?.timeout && typeof init.timeout === "number") {
-      const controller = new AbortController();
-      Object.assign(init, { signal: controller.signal });
-      timeoutId = setTimeout(() => controller.abort(), init.timeout);
-    }
+    const httpFunc =
+      init?.useNodeFetch === undefined
+        ? isNodeEnv
+          ? nfetch.fetch
+          : fetch
+        : init?.useNodeFetch
+        ? nfetch.fetch
+        : fetch;
+    const response = await httpFunc(input.toString(), {
+      ...init,
+      signal: controller.signal,
+    });
 
-    // make request
-    const httpFunc = init?.useNodeFetch === false ? fetch : nfetch.fetch;
-    const response = await httpFunc(input as any, init as any);
-
-    // check response
-    const throwHttpError = init?.throwHttpError !== false;
-    if (throwHttpError && !response.ok) {
-      const error = new Error(`statusCode: ${response.status}`);
-      (error as any).response = response;
+    if (init?.throwHttpError !== false && !response.ok) {
+      const error = new Error(`HTTP error ${response.status}`);
+      (error as any).response = response; // Attach response to error
       throw error;
     }
 
-    const retryCondition = init?.retryCondition;
-    if (retryCondition && typeof retryCondition === "function") {
-      const isOK = await retryCondition(response as MyFetchResponse);
-      if (!isOK) {
-        const error = new Error(
-          `failed 'isOkay' condition. statusCode: ${response.status}`
-        );
+    if (init?.retryCondition) {
+      if (!(await init.retryCondition(response))) {
+        const error = new Error(`Retry condition failed: ${response.status}`);
         (error as any).response = response;
         throw error;
       }
     }
 
-    // return response
-    return { success: true, response: response as MyFetchResponse };
-  } catch (error: any) {
+    return response as any;
+  } catch (error) {
     if (timeoutId) clearTimeout(timeoutId);
-
-    return { success: false, error };
+    throw error; // Re-throw the original error
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
-export async function myFetch(
+async function waitForBodyConsumption(
+  response: MyFetchResponse
+): Promise<void> {
+  if (!response.body) {
+    // No body, resolve immediately
+    return;
+  }
+
+  // Wait until `bodyUsed` becomes true
+  while (!response.bodyUsed) {
+    await new Promise((resolve) => setTimeout(resolve, 10)); // Polling interval
+  }
+}
+
+async function myFetch(
   input: MyFetchRequestInfo,
   init?: MyFetchRequestInit
-) {
-  const maxRetries =
-    init?.maxRetries === undefined
-      ? 1
-      : init.maxRetries === null
-      ? 0
-      : init.maxRetries < 0
-      ? 0
-      : init.maxRetries;
+): Promise<MyFetchResponse> {
+  const maxRetries = Math.max(0, init?.maxRetries ?? 1);
 
-  return new Promise<MyFetchResponse>((resolve, reject) => {
-    const executeRequest = async (retryCount: number) => {
-      currentRequests++;
-      let retrying = false;
-      try {
-        const { success, response, error } = await fetchWithConnection(
-          input,
-          init
-        );
-        if (success && response) {
-          resolve(response);
-        } else {
-          const err = error || new Error("Unknown error");
+  await semaphore.acquire(); // wait for chance
 
-          if (retryCount < maxRetries) {
-            retrying = true;
+  for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+    try {
+      const response = await request(input, init);
 
-            if (typeof init?.retryCb === "function") {
-              await init.retryCb(err, retryCount + 1, maxRetries);
-            }
+      // Wait for bodyConsumption if the option is enabled
+      if (init?.waitForBodyUsed) {
+        waitForBodyConsumption(response)
+          .then(() => semaphore.release())
+          .catch(() => semaphore.release());
+      } else semaphore.release();
 
-            executeRequest(retryCount + 1);
-          } else {
-            reject(err);
-          }
+      return response;
+    } catch (error) {
+      if (retryCount < maxRetries) {
+        if (init?.retryCb) {
+          await init.retryCb(error, retryCount + 1, maxRetries);
         }
-      } finally {
-        currentRequests--;
-        if (queue.length > 0 && !retrying) {
-          const nextRequest = queue.shift();
-          if (nextRequest) nextRequest();
-        }
+        continue; // Retry
       }
-    };
 
-    if (currentRequests < MAX_CONCURRENT_REQUESTS) {
-      executeRequest(0);
-    } else {
-      queue.push(() => executeRequest(0));
+      semaphore.release(); // make chance for other requests
+
+      throw error; // Re-throw after all retries failed
     }
-  });
+  }
+  throw new Error("unreachable");
 }
+
+/**
+ * set maximum number of concurrent requests (requests made at thesame time)
+ * @param max @default 500
+ */
+const SET_MAX_CONCURRENT_REQUESTS = (max: number) => {
+  MAX_CONCURRENT_REQUESTS = Math.max(1, max);
+};
+
+export { myFetch, SET_MAX_CONCURRENT_REQUESTS };
